@@ -1,0 +1,13 @@
+[Unit]
+Description=JVM Pusher script for pushgateway
+After=network.target
+
+[Service]
+Type=simple
+User=geowealth
+WorkingDirectory=/home/geowealth/jvm-parser/jvm-pusher  
+ExecStart=/home/geowealth/jvm-parser/jvm-pusher/venv/bin/python /home/geowealth/jvm-parser/jvm-pusher/jvm-pusher-all-fix.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
