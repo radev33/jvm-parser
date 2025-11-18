@@ -86,8 +86,9 @@ def getHeapSize(pid: int):
 def getGCData(pid: int):
     try:
         # Use list-based subprocess call instead of shell=True for security
+        # Using -gccapacity to get capacity-related GC statistics
         raw = subprocess.check_output(
-            ["jstat", "-gc", str(pid)],
+            ["jstat", "-gccapacity", str(pid)],
             stderr=subprocess.DEVNULL
         ).decode()
         lines = raw.strip().splitlines()
@@ -105,7 +106,7 @@ def getGCData(pid: int):
     except (subprocess.CalledProcessError, FileNotFoundError):
         return {}
     except Exception as e:
-        print(f"Error getting GC data for PID {pid}: {e}")
+        print(f"Error getting GC capacity data for PID {pid}: {e}")
         traceback.print_exc()
         return {}
 
@@ -195,13 +196,15 @@ def push_metrics():
                 point = point.field("value", heap_size)
                 points.append(point)
             
-            # GC metrics
+            # GC capacity metrics (from jstat -gccapacity)
             for gc_key, gc_value in stats["gc"].items():
-                # Convert GC key to metric name (e.g., "s0c" -> "jvm_gc_s0c_bytes")
-                metric_name = f"jvm_gc_{gc_key}_bytes"
+                # Convert GC key to metric name (e.g., "s0c" -> "jvm_gc_capacity_s0c_bytes")
+                # Note: jstat -gccapacity outputs values in KB, we convert to bytes
+                metric_name = f"jvm_gc_{gc_key}_kilobytes"
                 point = Point(metric_name)
                 for tag_key, tag_value in tags.items():
                     point = point.tag(tag_key, tag_value)
+                # Convert from KB to bytes (jstat -gccapacity reports in KB)
                 point = point.field("value", float(gc_value))
                 points.append(point)
         
